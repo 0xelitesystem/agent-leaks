@@ -2,22 +2,22 @@
 
 > Your agent read your `.env` three weeks ago. **That key is still sitting in a plaintext transcript.**
 
-`agent-leaks` scans Claude Code session transcripts for leaked secrets and redacts them in place. It finds the API keys, tokens, connection strings, and private keys that ended up in `~/.claude/projects/` — from every `cat .env`, every grep hit on a credentials file, every API error body your agent ever saw — and scrubs them without breaking the transcript.
+`agent-leaks` scans Claude Code session transcripts for leaked secrets and redacts them in place. It finds the API keys, tokens, connection strings, and private keys that ended up in `~/.claude/projects/`, from every `cat .env`, every grep hit on a credentials file, every API error body your agent ever saw, and scrubs them without breaking the transcript.
 
-Zero dependencies. Pure Python stdlib. Works offline — no API keys, nothing leaves your machine.
+Zero dependencies. Pure Python stdlib. Works offline, no API keys, nothing leaves your machine.
 
 ## The problem
 
-Claude Code persists everything an agent sees to plaintext JSONL transcripts in `~/.claude/projects/<project>/<session>.jsonl`, forever. File contents your agent read — including secrets — are stored verbatim. This is [a known, open issue](https://github.com/anthropics/claude-code/issues/44868): read file contents are persisted to disk in plaintext, and a `CLAUDE.md` rule saying "never read .env" is advisory — the model can ignore it, and one `cat .env` inside a script's output bypasses it entirely.
+Claude Code persists everything an agent sees to plaintext JSONL transcripts in `~/.claude/projects/<project>/<session>.jsonl`, forever. File contents your agent read, including secrets, are stored verbatim. This is [a known, open issue](https://github.com/anthropics/claude-code/issues/44868): read file contents are persisted to disk in plaintext, and a `CLAUDE.md` rule saying "never read .env" is advisory, the model can ignore it, and one `cat .env` inside a script's output bypasses it entirely.
 
 This is not theoretical. [agentfluent#72](https://github.com/frederick-douglas-pearce/agentfluent/issues/72) documents **two live Anthropic API keys** found sitting in session JSONL files. Every transcript viewer, every backup, every synced home directory carries them along.
 
-Tools like claude-vault work on *prevention* — keeping secrets out of the agent's view in the first place. agent-leaks is the other half: **detection + remediation for what's already in your transcripts**. You probably have months of session history from before you hardened anything. This is the tool that goes back and cleans it.
+Tools like claude-vault work on *prevention*, keeping secrets out of the agent's view in the first place. agent-leaks is the other half: **detection + remediation for what's already in your transcripts**. You probably have months of session history from before you hardened anything. This is the tool that goes back and cleans it.
 
 ## What it finds
 
 ```
-  agent-leaks — secrets in your agent transcripts
+  agent-leaks, secrets in your agent transcripts
 
   demo-session.jsonl · examples · 8 lines
   ⚠ HIGH anthropic-api-key        line 3     sk-a…(47 chars)  ×3
@@ -30,7 +30,7 @@ Tools like claude-vault work on *prevention* — keeping secrets out of the agen
   run `leaks redact <file> --write` to scrub them
 ```
 
-That's a real scan of [`examples/demo-session.jsonl`](examples/demo-session.jsonl) — a synthetic transcript (all planted secrets are fake) where an agent ran `cat .env` and then got a token echoed back in an API error body. Note the `×3`: the same `.env` shows up in the tool result, the `toolUseResult` mirror, **and** a `file-history-snapshot` record — a record type most tools never look at. agent-leaks walks every string in every record type, so nothing rides along unseen. (This repo ships no Stripe-shaped literal anywhere — Stripe detection is covered in the unit tests with values assembled at runtime, so GitHub push protection has nothing to flag. Fitting, for a secrets tool.)
+That's a real scan of [`examples/demo-session.jsonl`](examples/demo-session.jsonl), a synthetic transcript (all planted secrets are fake) where an agent ran `cat .env` and then got a token echoed back in an API error body. Note the `×3`: the same `.env` shows up in the tool result, the `toolUseResult` mirror, **and** a `file-history-snapshot` record, a record type most tools never look at. agent-leaks walks every string in every record type, so nothing rides along unseen. (This repo ships no Stripe-shaped literal anywhere, Stripe detection is covered in the unit tests with values assembled at runtime, so GitHub push protection has nothing to flag. Fitting, for a secrets tool.)
 
 Run it yourself:
 
@@ -38,7 +38,7 @@ Run it yourself:
 leaks scan examples/demo-session.jsonl
 ```
 
-No full secret value is ever printed, logged, or written to a report — previews are first-4-chars + length, and dedupe keys are sha256 digests.
+No full secret value is ever printed, logged, or written to a report, previews are first-4-chars + length, and dedupe keys are sha256 digests.
 
 ## Install
 
@@ -68,7 +68,7 @@ leaks scan all --project acme-api
 leaks scan latest --json
 leaks scan all --fail-on-find
 
-# Redact: dry run first (default — shows what would change, writes nothing)
+# Redact: dry run first (default, shows what would change, writes nothing)
 leaks redact 8dcbd9b2
 
 # Then actually scrub, keeping a .bak of the original
@@ -98,28 +98,28 @@ Findings are deduped by sha256 of the secret value; repeated occurrences are cou
 
 ## How redaction works
 
-Each secret occurrence is replaced with `[REDACTED:<detector>:<first-8-of-sha256>]` — the sha prefix means you can still tell "the same key leaked in 4 sessions" after the value itself is gone.
+Each secret occurrence is replaced with `[REDACTED:<detector>:<first-8-of-sha256>]`, the sha prefix means you can still tell "the same key leaked in 4 sessions" after the value itself is gone.
 
-Redaction is **not** string replacement on the raw file. Every line is JSON-parsed, every string value is walked recursively, secret spans are spliced out, and the record is re-serialized — so secrets containing JSON-escaped characters (quotes, backslashes) are caught, and the output stays valid JSONL that Claude Code can still load. Lines with nothing to redact are passed through byte-identical. Dry run is the default; `--write` is explicit, `--backup` keeps a `.bak`.
+Redaction is **not** string replacement on the raw file. Every line is JSON-parsed, every string value is walked recursively, secret spans are spliced out, and the record is re-serialized, so secrets containing JSON-escaped characters (quotes, backslashes) are caught, and the output stays valid JSONL that Claude Code can still load. Lines with nothing to redact are passed through byte-identical. Dry run is the default; `--write` is explicit, `--backup` keeps a `.bak`.
 
 ## Honest limitations
 
-- Detection is regex-based. Secrets with no recognizable shape — a random hex blob with no `KEY=` label, a password in prose — will be missed. The entropy heuristic on the generic detector trades recall for precision: it has false negatives by design.
+- Detection is regex-based. Secrets with no recognizable shape, a random hex blob with no `KEY=` label, a password in prose, will be missed. The entropy heuristic on the generic detector trades recall for precision: it has false negatives by design.
 - Redaction can't un-leak anything. If the transcript was synced to a backup service, shared, or piped through another tool before you scrubbed it, that copy still has the secret. **Rotate any real key this tool finds.** Redaction is cleanup, not revocation.
 - `scan all` reads every transcript on the machine; on years of history that's a lot of JSON. It's still fast (stdlib, single pass), but it's not instant.
 
 ## Part of the agent accountability suite
 
-- [agent-receipts](https://github.com/0xelitesystem/agent-receipts) — did the agent's claims ("tests pass") match reality?
-- **agent-leaks** — did it leak secrets into the transcript?
-- [agent-blast-radius](https://github.com/0xelitesystem/agent-blast-radius) — what irreversible actions did it take?
-- [agent-rules](https://github.com/0xelitesystem/agent-rules) — did it follow your `CLAUDE.md`?
-- [agent-cost](https://github.com/0xelitesystem/agent-cost) — where did the tokens and money go?
+- [agent-receipts](https://github.com/0xelitesystem/agent-receipts), did the agent's claims ("tests pass") match reality?
+- **agent-leaks**, did it leak secrets into the transcript?
+- [agent-blast-radius](https://github.com/0xelitesystem/agent-blast-radius), what irreversible actions did it take?
+- [agent-rules](https://github.com/0xelitesystem/agent-rules), did it follow your `CLAUDE.md`?
+- [agent-cost](https://github.com/0xelitesystem/agent-cost), where did the tokens and money go?
 
 ## Roadmap
 
 - [ ] Pre-commit hook mode for repos that version transcript directories
-- [ ] `agent-leaks watch` — tail the active session, flag secrets as they land
+- [ ] `agent-leaks watch`, tail the active session, flag secrets as they land
 - [ ] Custom detector config (`~/.agent-leaks.toml`: your own patterns + allowlist)
 - [ ] Other agent CLI transcript formats (Codex CLI, OpenCode, Gemini CLI)
 
