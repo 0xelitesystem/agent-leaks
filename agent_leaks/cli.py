@@ -1,4 +1,4 @@
-"""agent-leaks — find and redact secrets your coding agent left in transcripts.
+"""agent-leaks: find and redact secrets your coding agent left in transcripts.
 
 Installed as the `leaks` command (and `agent-leaks` alias).
 

@@ -5,8 +5,8 @@ Format notes (observed against Claude Code 2.x transcripts):
 - "assistant" records carry message.content blocks (text / tool_use),
   "user" records carry tool_result blocks plus a sibling toolUseResult.
 - Many other record types exist (system, attachment, ai-title,
-  file-history-snapshot, ...) and secrets can surface in ANY of them —
-  a file-history-snapshot of your .env is still your .env.
+  file-history-snapshot, ...) and secrets can surface in ANY of them.
+  A file-history-snapshot of your .env is still your .env.
 
 So instead of modeling record types, both scan and redact walk the
 parsed JSON of every line recursively and visit every string value.
@@ -14,7 +14,7 @@ parsed JSON of every line recursively and visit every string value.
 Redaction never does string replacement on the raw line: a secret that
 contains JSON-escaped characters on disk would dodge it. Each line is
 json.loads'ed, every string is rewritten with the secret spans spliced
-out, and the record is re-serialized with json.dumps — the output stays
+out, and the record is re-serialized with json.dumps. The output stays
 valid JSONL that Claude Code can still load. Lines without secrets (and
 lines that aren't valid JSON) are passed through byte-identical.
 """
@@ -36,7 +36,7 @@ class Finding:
 
     detector: str
     severity: Severity
-    sha256: str  # full hex digest of the secret value — safe to show
+    sha256: str  # full hex digest of the secret value, safe to show
     preview: str  # masked, e.g. "sk-a…(46 chars)"
     line: int  # 1-based JSONL line of the first occurrence
     occurrences: int = 1

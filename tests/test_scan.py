@@ -26,7 +26,7 @@ def test_scan_dedupes_by_value_and_counts_occurrences(leaky_transcript):
     scan = scan_file(leaky_transcript)
     anthropic = next(f for f in scan.findings if f.detector == "anthropic-api-key")
     # Same key appears in tool_result content, toolUseResult.stdout, and
-    # the file-history-snapshot — one finding, three occurrences.
+    # the file-history-snapshot: one finding, three occurrences.
     assert anthropic.occurrences == 3
 
 

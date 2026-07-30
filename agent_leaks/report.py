@@ -1,6 +1,6 @@
 """Render scan and redact results: ANSI terminal report or JSON.
 
-Nothing in this module ever touches a raw secret value — by the time a
+Nothing in this module ever touches a raw secret value. By the time a
 Finding reaches here it only carries the masked preview and the sha256.
 """
 
@@ -67,7 +67,7 @@ def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> st
 
     out("")
     out(_paint("  agent-leaks", _BOLD, _CYAN, enabled=color)
-        + _paint(" — secrets in your agent transcripts", _DIM, enabled=color))
+        + _paint(" - secrets in your agent transcripts", _DIM, enabled=color))
     out("")
 
     for scan in scans:
@@ -76,7 +76,7 @@ def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> st
         out(_paint(f"  {Path(scan.path).name} · {scan.project} · "
                    f"{scan.lines} lines", _DIM, enabled=color))
         if not scan.findings:
-            out("  " + _paint("✓ clean — no secrets found", _GREEN, enabled=color))
+            out("  " + _paint("✓ clean, no secrets found", _GREEN, enabled=color))
         else:
             for finding in scan.findings:
                 out(_finding_line(finding, color))
@@ -95,7 +95,7 @@ def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> st
         out(_paint("  run `leaks redact <file> --write` to scrub them",
                    _DIM, enabled=color))
     elif len(scans) > 1:
-        out("  " + _paint("✓ all clean — no secrets found", _GREEN, enabled=color))
+        out("  " + _paint("✓ all clean, no secrets found", _GREEN, enabled=color))
     out("")
     return "\n".join(lines)
 
@@ -131,12 +131,12 @@ def render_redact_terminal(result: RedactResult, color: bool | None = None) -> s
 
     out("")
     out(_paint("  agent-leaks", _BOLD, _CYAN, enabled=color)
-        + _paint(" — redact", _DIM, enabled=color))
+        + _paint(" - redact", _DIM, enabled=color))
     out(_paint(f"  {Path(result.path).name}", _DIM, enabled=color))
     out("")
 
     if not result.findings:
-        out("  " + _paint("✓ clean — nothing to redact", _GREEN, enabled=color))
+        out("  " + _paint("✓ clean, nothing to redact", _GREEN, enabled=color))
         out("")
         return "\n".join(lines)
 
@@ -154,7 +154,7 @@ def render_redact_terminal(result: RedactResult, color: bool | None = None) -> s
             out(_paint(f"  backup written to {result.backup_path}",
                        _DIM, enabled=color))
     else:
-        out(_paint(f"  dry run — {len(result.findings)} secret(s) "
+        out(_paint(f"  dry run: {len(result.findings)} secret(s) "
                    f"({occurrences} occurrence(s)) on {result.lines_changed} "
                    f"line(s) would be redacted", _BOLD, _YELLOW, enabled=color))
         out(_paint("  file NOT modified. re-run with --write "

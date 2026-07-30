@@ -1,8 +1,8 @@
-"""Regenerate demo-session.jsonl — a synthetic transcript of an agent
+"""Regenerate demo-session.jsonl, a synthetic transcript of an agent
 that read a .env and got an API error body, leaving OBVIOUSLY FAKE
 planted secrets behind in the transcript. Run: python examples/make_demo.py
 
-Every secret below is fake. None of them work. That's the point — they
+Every secret below is fake. None of them work. That's the point: they
 exist so `agent-leaks scan examples/demo-session.jsonl` has something
 real-shaped to find.
 """
@@ -54,15 +54,15 @@ records = [
     asst_tool("t2", "Bash", {
         "command": "curl -s https://api.billing.fake/v1/charges",
     }),
-    # An API error body echoing a token back — tool OUTPUTS leak too.
+    # An API error body echoing a token back. Tool OUTPUTS leak too.
     result("t2", '{"error":{"message":"Invalid API key provided",'
                  f'"token":"{FAKE_JWT}"}}', is_error=True),
-    # Claude Code also snapshots files it touched — the .env rides along
+    # Claude Code also snapshots files it touched, and the .env rides along
     # in a record type most tools never look at.
     {"type": "file-history-snapshot", "messageId": "msg-demo-1",
      "timestamp": "2026-06-10T12:00:02Z",
      "snapshot": {"trackedFileBackups": {".env": {"content": FAKE_ENV}}}},
-    asst_text("The Stripe call failed with an invalid-key error — the key in "
+    asst_text("The Stripe call failed with an invalid-key error. The key in "
               ".env looks stale. Everything else is wired up."),
 ]
 

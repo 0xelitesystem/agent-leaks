@@ -8,7 +8,7 @@ placeholders).
 
 Two rules every detector obeys:
 - Findings are deduped by sha256 of the secret value, and the raw value
-  is never rendered anywhere — `mask()` is the only preview.
+  is never rendered anywhere. `mask()` is the only preview.
 - Case-insensitivity is always a compile flag, never an inline `(?i)`
   mid-pattern (a hard error on Python 3.14).
 """
@@ -55,8 +55,8 @@ _PLACEHOLDER_MARKERS = (
 def _generic_value_ok(value: str) -> bool:
     """Gate for the generic detector: long, high-entropy, not a placeholder.
 
-    The entropy gate (> 3.5 bits/char) is what keeps precision high —
-    nobody cleans up a tool that cries wolf on `NODE_ENV=production`.
+    The entropy gate (> 3.5 bits/char) is what keeps precision high.
+    Nobody cleans up a tool that cries wolf on `NODE_ENV=production`.
     """
     if len(value) < 12:
         return False
@@ -86,7 +86,7 @@ class SecretHit:
 
 
 # Order matters: specific detectors first. When spans overlap, the
-# earlier detector wins — `ANTHROPIC_API_KEY=sk-ant-…` is claimed by the
+# earlier detector wins: `ANTHROPIC_API_KEY=sk-ant-…` is claimed by the
 # Anthropic detector before the OpenAI or generic patterns can
 # double-fire on the same characters.
 DETECTORS: list[Detector] = [

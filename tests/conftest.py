@@ -1,6 +1,6 @@
 """Fixture transcripts built in Claude Code's JSONL shape.
 
-Every secret in here is fake and inert — they exist only so the
+Every secret in here is fake and inert. They exist only so the
 detectors have realistic-shaped strings to find.
 """
 
@@ -17,7 +17,7 @@ FAKE_GITHUB = "ghp_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE1234"
 FAKE_GITHUB_PAT = "github_pat_" + "FAKE2026" * 7  # 56 chars after the prefix
 FAKE_AWS = "AKIAFAKEFAKEFAKE1234"
 FAKE_SLACK = "xoxb-1234567890-FAKEFAKEFAKE"
-# Built from fragments so no `sk_live_…`-shaped literal is ever committed —
+# Built from fragments so no `sk_live_…`-shaped literal is ever committed.
 # GitHub push protection flags Stripe's format even on inert fakes. The value
 # is reassembled at runtime, so the detector still has a real-shaped string.
 FAKE_STRIPE = "sk_" + "live_FAKEFAKEFAKEFAKEFAKE1234"
@@ -66,7 +66,7 @@ def tool_result(tool_id: str, content: str, is_error: bool = False) -> dict:
 
 
 def snapshot(content: str) -> dict:
-    """A file-history-snapshot record — the type most tools never scan."""
+    """A file-history-snapshot record, the type most tools never scan."""
     return {
         "type": "file-history-snapshot",
         "messageId": "msg-fixture-1",
@@ -112,7 +112,7 @@ def clean_transcript(tmp_path):
 @pytest.fixture
 def escaped_transcript(tmp_path):
     """A connection string whose password carries JSON-escaped characters
-    (backslash + quote) — the case naive raw-line replacement gets wrong."""
+    (backslash + quote), the case naive raw-line replacement gets wrong."""
     conn = 'mysql://root:pa\\s"w0rd@db.fake:3306'
     records = [
         assistant_tool("t1", "Bash", {"command": "cat config.ini"}),
