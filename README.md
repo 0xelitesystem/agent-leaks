@@ -20,11 +20,11 @@ Tools like claude-vault work on *prevention*, keeping secrets out of the agent's
   agent-leaks, secrets in your agent transcripts
 
   demo-session.jsonl · examples · 8 lines
-  ⚠ HIGH anthropic-api-key        line 3     sk-a…(47 chars)  ×3
-  ⚠ HIGH aws-access-key-id        line 3     AKIA…(20 chars)  ×3
-  ⚠ HIGH connection-string        line 3     post…(35 chars)  ×3
-  ⚠ HIGH github-token             line 3     ghp_…(40 chars)  ×3
-  ⚠ MED  jwt                      line 6     eyJh…(68 chars)  ×2
+  ⚠ HIGH anthropic-api-key        line 3     sk-a...(47 chars)  ×3
+  ⚠ HIGH aws-access-key-id        line 3     AKIA...(20 chars)  ×3
+  ⚠ HIGH connection-string        line 3     post...(35 chars)  ×3
+  ⚠ HIGH github-token             line 3     ghp_...(40 chars)  ×3
+  ⚠ MED  jwt                      line 6     eyJh...(68 chars)  ×2
 
   5 unique secret(s) · 4 high · 1 medium
   run `leaks redact <file> --write` to scrub them
@@ -81,18 +81,18 @@ Exit codes: `0` clean (findings without `--fail-on-find` and redact dry runs als
 
 | Detector | Severity | Fires on |
 |---|---|---|
-| `anthropic-api-key` | HIGH | `sk-ant-…` |
-| `openai-api-key` | HIGH | `sk-…` / `sk-proj-…` (never double-fires on `sk-ant-`) |
+| `anthropic-api-key` | HIGH | `sk-ant-...` |
+| `openai-api-key` | HIGH | `sk-...` / `sk-proj-...` (never double-fires on `sk-ant-`) |
 | `github-token` | HIGH | `ghp_` / `gho_` / `ghu_` / `ghs_` / `ghr_` tokens |
-| `github-fine-grained-pat` | HIGH | `github_pat_…` |
-| `aws-access-key-id` | HIGH | `AKIA…` |
+| `github-fine-grained-pat` | HIGH | `github_pat_...` |
+| `aws-access-key-id` | HIGH | `AKIA...` |
 | `slack-token` | HIGH | `xoxb-` / `xoxp-` / `xoxa-` / `xoxr-` / `xoxs-` |
-| `stripe-live-key` | HIGH | `sk_live_…` / `rk_live_…` |
-| `google-api-key` | HIGH | `AIza…` |
-| `connection-string` | HIGH | `postgres://user:pass@…` (also mysql, mongodb, redis, amqp) |
-| `private-key-block` | HIGH | `-----BEGIN … PRIVATE KEY-----` (redacts through the END marker) |
-| `jwt` | MEDIUM | three-segment `eyJ…` tokens |
-| `generic-credential` | MEDIUM | `API_KEY=` / `SECRET=` / `TOKEN=` / `PASSWORD=` … assignments where the value is ≥12 chars, Shannon entropy > 3.5 bits/char, and not an obvious placeholder |
+| `stripe-live-key` | HIGH | `sk_live_...` / `rk_live_...` |
+| `google-api-key` | HIGH | `AIza...` |
+| `connection-string` | HIGH | `postgres://user:pass@...` (also mysql, mongodb, redis, amqp) |
+| `private-key-block` | HIGH | `-----BEGIN ... PRIVATE KEY-----` (redacts through the END marker) |
+| `jwt` | MEDIUM | three-segment `eyJ...` tokens |
+| `generic-credential` | MEDIUM | `API_KEY=` / `SECRET=` / `TOKEN=` / `PASSWORD=` ... assignments where the value is ≥12 chars, Shannon entropy > 3.5 bits/char, and not an obvious placeholder |
 
 Findings are deduped by sha256 of the secret value; repeated occurrences are counted, not re-reported.
 
@@ -133,6 +133,10 @@ pytest
 ```
 
 `examples/make_demo.py` regenerates the demo transcript; every planted secret in it is fake.
+
+## More
+
+Part of a catalog of single-file browser tools and plain-language references, all MIT licensed and dependency-free: [0xelitesystem.github.io](https://0xelitesystem.github.io/). Built by [elitesystem.ai](https://elitesystem.ai).
 
 ## License
 
