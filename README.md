@@ -19,14 +19,14 @@ Tools like claude-vault work on *prevention*, keeping secrets out of the agent's
 ```
   agent-leaks, secrets in your agent transcripts
 
-  demo-session.jsonl · examples · 8 lines
+  demo-session.jsonl  -  examples  -  8 lines
   ⚠ HIGH anthropic-api-key        line 3     sk-a...(47 chars)  ×3
   ⚠ HIGH aws-access-key-id        line 3     AKIA...(20 chars)  ×3
   ⚠ HIGH connection-string        line 3     post...(35 chars)  ×3
   ⚠ HIGH github-token             line 3     ghp_...(40 chars)  ×3
   ⚠ MED  jwt                      line 6     eyJh...(68 chars)  ×2
 
-  5 unique secret(s) · 4 high · 1 medium
+  5 unique secret(s)  -  4 high  -  1 medium
   run `leaks redact <file> --write` to scrub them
 ```
 

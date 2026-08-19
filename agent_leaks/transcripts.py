@@ -37,7 +37,7 @@ class Finding:
     detector: str
     severity: Severity
     sha256: str  # full hex digest of the secret value, safe to show
-    preview: str  # masked, e.g. "sk-a…(46 chars)"
+    preview: str  # masked, e.g. "sk-a...(46 chars)"
     line: int  # 1-based JSONL line of the first occurrence
     occurrences: int = 1
 

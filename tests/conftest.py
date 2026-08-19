@@ -17,7 +17,7 @@ FAKE_GITHUB = "ghp_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE1234"
 FAKE_GITHUB_PAT = "github_pat_" + "FAKE2026" * 7  # 56 chars after the prefix
 FAKE_AWS = "AKIAFAKEFAKEFAKE1234"
 FAKE_SLACK = "xoxb-1234567890-FAKEFAKEFAKE"
-# Built from fragments so no `sk_live_…`-shaped literal is ever committed.
+# Built from fragments so no `sk_live_...`-shaped literal is ever committed.
 # GitHub push protection flags Stripe's format even on inert fakes. The value
 # is reassembled at runtime, so the detector still has a real-shaped string.
 FAKE_STRIPE = "sk_" + "live_FAKEFAKEFAKEFAKEFAKE1234"

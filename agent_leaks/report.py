@@ -73,7 +73,7 @@ def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> st
     for scan in scans:
         if not scan.findings and len(scans) > 1:
             continue  # in `all` mode, only show files that have findings
-        out(_paint(f"  {Path(scan.path).name} · {scan.project} · "
+        out(_paint(f"  {Path(scan.path).name}  -  {scan.project}  -  "
                    f"{scan.lines} lines", _DIM, enabled=color))
         if not scan.findings:
             out("  " + _paint("✓ clean, no secrets found", _GREEN, enabled=color))
@@ -84,13 +84,13 @@ def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> st
 
     if len(scans) > 1:
         out(_paint(
-            f"  scanned {totals['files_scanned']} transcript(s) · "
+            f"  scanned {totals['files_scanned']} transcript(s)  -  "
             f"{totals['files_with_findings']} contain secrets",
             _BOLD, enabled=color))
     if totals["findings"]:
         out(_paint(
-            f"  {totals['findings']} unique secret(s) · "
-            f"{totals['high']} high · {totals['medium']} medium",
+            f"  {totals['findings']} unique secret(s)  -  "
+            f"{totals['high']} high  -  {totals['medium']} medium",
             _BOLD, _RED if totals["high"] else _YELLOW, enabled=color))
         out(_paint("  run `leaks redact <file> --write` to scrub them",
                    _DIM, enabled=color))
@@ -141,7 +141,7 @@ def render_redact_terminal(result: RedactResult, color: bool | None = None) -> s
         return "\n".join(lines)
 
     for finding in result.findings:
-        out(_finding_line(finding, color) + _paint(f"  → {finding.marker}",
+        out(_finding_line(finding, color) + _paint(f"  -> {finding.marker}",
                                                    _DIM, enabled=color))
     out("")
 

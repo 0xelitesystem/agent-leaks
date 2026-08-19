@@ -39,7 +39,7 @@ def shannon_entropy(s: str) -> float:
 
 def mask(value: str) -> str:
     """Safe preview: first 4 chars + total length. Never the value."""
-    return f"{value[:4]}…({len(value)} chars)"
+    return f"{value[:4]}...({len(value)} chars)"
 
 
 def sha256_hex(value: str) -> str:
@@ -86,7 +86,7 @@ class SecretHit:
 
 
 # Order matters: specific detectors first. When spans overlap, the
-# earlier detector wins: `ANTHROPIC_API_KEY=sk-ant-…` is claimed by the
+# earlier detector wins: `ANTHROPIC_API_KEY=sk-ant-...` is claimed by the
 # Anthropic detector before the OpenAI or generic patterns can
 # double-fire on the same characters.
 DETECTORS: list[Detector] = [
@@ -103,7 +103,7 @@ DETECTORS: list[Detector] = [
     ),
     Detector(
         "openai-api-key", Severity.HIGH,
-        # Negative lookahead keeps sk-ant-… out of this detector's reach.
+        # Negative lookahead keeps sk-ant-... out of this detector's reach.
         re.compile(r"sk-(?!ant-)(?:proj-)?[A-Za-z0-9_\-]{20,}"),
     ),
     Detector(
@@ -155,7 +155,7 @@ def find_secrets(text: str) -> list[SecretHit]:
     """All secret occurrences in one string, overlap-deduped.
 
     Detectors run in priority order; a match whose span overlaps an
-    already-claimed span is dropped, so `GITHUB_TOKEN=ghp_…` yields
+    already-claimed span is dropped, so `GITHUB_TOKEN=ghp_...` yields
     exactly one hit (github-token), not a github-token plus a
     generic-credential on the same characters.
     """
