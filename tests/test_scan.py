@@ -59,8 +59,8 @@ def test_no_output_format_ever_contains_the_raw_secret(leaky_transcript):
         assert FAKE_ANTHROPIC not in output
         assert FAKE_AWS not in output
     # ...but the masked previews are there.
-    assert f"sk-a...({len(FAKE_ANTHROPIC)} chars)" in terminal
-    assert f"AKIA...({len(FAKE_AWS)} chars)" in terminal
+    assert f"sk-a…({len(FAKE_ANTHROPIC)} chars)" in terminal
+    assert f"AKIA…({len(FAKE_AWS)} chars)" in terminal
 
 
 def test_json_report_is_valid_json_with_expected_shape(leaky_transcript):

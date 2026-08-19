@@ -102,7 +102,7 @@ def test_shannon_entropy():
 
 def test_mask_never_reveals_secret():
     masked = mask(FAKE_ANTHROPIC)
-    assert masked == f"sk-a...({len(FAKE_ANTHROPIC)} chars)"
+    assert masked == f"sk-a…({len(FAKE_ANTHROPIC)} chars)"
     assert FAKE_ANTHROPIC not in masked
     assert FAKE_ANTHROPIC[4:] not in masked
 
