@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -160,6 +162,46 @@ def _redact_string(text: str, findings: dict[str, Finding], lineno: int) -> str:
     return text
 
 
+_SURROGATE = re.compile("[\ud800-\udfff]")
+
+
+def _dump_record(record) -> str:
+    """Serialize a rewritten record as one compact JSONL line.
+
+    A lone surrogate (Node stores one as a \\udXXX escape when output is
+    cut mid-emoji) can't be encoded as UTF-8, so such a line keeps its
+    escapes: still valid JSON that Node reads back the same way.
+    """
+    line = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+    if _SURROGATE.search(line):
+        line = json.dumps(record, ensure_ascii=True, separators=(",", ":"))
+    return line
+
+
+def _replace_file(path: Path, data: bytes) -> None:
+    """Swap in new bytes atomically: temp file in the same folder, fsync,
+    then os.replace. On any failure the original file is untouched."""
+    target = Path(os.path.realpath(path))
+    fd, tmp = tempfile.mkstemp(dir=target.parent,
+                               prefix=f".{target.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        try:
+            shutil.copymode(target, tmp)
+        except OSError:
+            pass
+        os.replace(tmp, target)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def redact_file(path: str | Path, *, write: bool = False,
                 backup: bool = False) -> RedactResult:
     """Redact secrets in a transcript. Dry run unless write=True.
@@ -176,7 +218,14 @@ def redact_file(path: str | Path, *, write: bool = False,
     out_lines: list[str] = []
     lines_changed = 0
 
-    for lineno, line in enumerate(raw.splitlines(), 1):
+    # Split on "\n" only, exactly like scan_file. str.splitlines() also
+    # breaks on U+2028, U+2029 and U+0085, which JSON.stringify writes raw
+    # inside strings, and would cut records in half.
+    raw_lines = raw.split("\n")
+    if had_trailing_newline:
+        raw_lines.pop()
+
+    for lineno, line in enumerate(raw_lines, 1):
         if not line.strip():
             out_lines.append(line)
             continue
@@ -191,8 +240,7 @@ def redact_file(path: str | Path, *, write: bool = False,
             record, lambda s: _redact_string(s, findings, lineno))
         after_occurrences = sum(f.occurrences for f in findings.values())
         if len(findings) > before or after_occurrences > before_occurrences:
-            out_lines.append(json.dumps(new_record, ensure_ascii=False,
-                                        separators=(",", ":")))
+            out_lines.append(_dump_record(new_record))
             lines_changed += 1
         else:
             out_lines.append(line)
@@ -204,12 +252,14 @@ def redact_file(path: str | Path, *, write: bool = False,
     )
 
     if write and result.findings:
+        content = "\n".join(out_lines) + ("\n" if had_trailing_newline else "")
+        # Encode before touching anything: if it fails, nothing is written.
+        data = content.encode("utf-8")
         if backup:
             backup_path = str(path) + ".bak"
             shutil.copy2(path, backup_path)  # backup FIRST; abort on failure
             result.backup_path = backup_path
-        content = "\n".join(out_lines) + ("\n" if had_trailing_newline else "")
-        path.write_text(content, encoding="utf-8", newline="\n")
+        _replace_file(path, data)
         result.written = True
 
     return result

@@ -4,6 +4,8 @@ reveals the secret."""
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from conftest import (
     FAKE_ANTHROPIC,
@@ -111,3 +113,28 @@ def test_multiple_secrets_in_one_string_all_found():
     blob = f"a={FAKE_AWS} b={FAKE_SLACK} c={FAKE_GOOGLE}"
     names = {h.detector.name for h in find_secrets(blob)}
     assert names == {"aws-access-key-id", "slack-token", "google-api-key"}
+
+
+@pytest.mark.parametrize("text", [
+    "token" * 400,        # repeated keyword: was cubic, ~10 s
+    "a" * 20000,          # one long word: was quadratic, ~17 s
+    "0x" + "f" * 24000,   # contract bytecode an agent Read
+], ids=["token-x400", "word-20000", "hex-24000"])
+def test_generic_detector_is_linear_on_hostile_input(text):
+    # The bound is generous: the linear pattern needs milliseconds here.
+    started = time.perf_counter()
+    assert find_secrets(text) == []
+    assert time.perf_counter() - started < 2.0
+
+
+def test_generic_detector_bounded_pattern_keeps_matches():
+    cases = [
+        (f"export MY_SECRET_TOKEN: '{FAKE_GENERIC}'", FAKE_GENERIC),
+        (f"db_password = {FAKE_GENERIC};", FAKE_GENERIC),
+        (f"x-api_key={FAKE_GENERIC} and more", FAKE_GENERIC),
+        (f"TOKEN={FAKE_GENERIC}\nSECRET={FAKE_GENERIC[::-1]}", FAKE_GENERIC),
+    ]
+    for text, value in cases:
+        hits = find_secrets(text)
+        assert hits and hits[0].detector.name == "generic-credential"
+        assert hits[0].value == value

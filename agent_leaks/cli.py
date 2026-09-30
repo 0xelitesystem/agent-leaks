@@ -67,7 +67,7 @@ def _cmd_redact(args: argparse.Namespace) -> int:
     try:
         path = resolve_target(args.target)
         result = redact_file(path, write=args.write, backup=args.backup)
-    except (FileNotFoundError, OSError) as exc:
+    except (FileNotFoundError, OSError, UnicodeError) as exc:
         print(f"agent-leaks: {exc}", file=sys.stderr)
         return 2
 

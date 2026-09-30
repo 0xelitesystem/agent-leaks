@@ -7,7 +7,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from conftest import FAKE_ANTHROPIC, FAKE_AWS
+import pytest
+from conftest import (
+    FAKE_ANTHROPIC,
+    FAKE_AWS,
+    FAKE_GITHUB,
+    assistant_text,
+    tool_result,
+)
 
 from agent_leaks.detectors import sha256_hex
 from agent_leaks.transcripts import redact_file, scan_file
@@ -112,3 +119,99 @@ def test_redact_clean_file_writes_nothing(clean_transcript):
     assert not result.written
     assert not Path(clean_transcript + ".bak").exists()
     assert Path(clean_transcript).read_bytes() == original
+
+
+def test_lone_surrogate_record_is_redacted_not_wiped(tmp_path):
+    # Node's JSON.stringify stores a lone surrogate (output cut mid-emoji)
+    # as a \ud83d escape; json.loads turns it back into a real lone
+    # surrogate, which UTF-8 can't encode. The write must not wipe the file.
+    first = json.dumps(assistant_text("Checking the build output."))
+    second = ('{"type":"user","toolUseResult":{"stdout":"truncated emoji '
+              '\\ud83d ' + FAKE_AWS + '"}}')
+    path = tmp_path / "surrogate.jsonl"
+    path.write_text(first + "\n" + second + "\n", encoding="utf-8")
+
+    result = redact_file(path, write=True)
+    assert result.written
+    text = path.read_text(encoding="utf-8")
+    assert FAKE_AWS not in text
+    lines = text.split("\n")
+    assert lines[0] == first
+    assert lines[2] == ""
+    marker = f"[REDACTED:aws-access-key-id:{sha256_hex(FAKE_AWS)[:8]}]"
+    assert json.loads(lines[1])["toolUseResult"]["stdout"] == \
+        "truncated emoji \ud83d " + marker
+    assert scan_file(path).findings == []
+
+
+def test_lone_surrogate_redact_write_via_cli_keeps_file(tmp_path):
+    from agent_leaks.cli import main
+    path = tmp_path / "surrogate_cli.jsonl"
+    path.write_text('{"type":"user","toolUseResult":{"stdout":"cut \\ud83d '
+                    + FAKE_AWS + '"}}\n', encoding="utf-8")
+    assert main(["redact", str(path), "--write", "--no-color"]) == 0
+    text = path.read_text(encoding="utf-8")
+    assert text.endswith("\n") and FAKE_AWS not in text
+    assert json.loads(text)["toolUseResult"]["stdout"].startswith("cut \ud83d ")
+
+
+def test_unencodable_output_refuses_write_and_keeps_original(
+        leaky_transcript, monkeypatch):
+    # Whatever produces an unencodable line, the original must survive.
+    import agent_leaks.transcripts as transcripts
+    original = Path(leaky_transcript).read_bytes()
+    monkeypatch.setattr(transcripts.json, "dumps",
+                        lambda *args, **kwargs: '{"x":"\ud800"}')
+    with pytest.raises(UnicodeError):
+        redact_file(leaky_transcript, write=True)
+    monkeypatch.undo()
+    assert Path(leaky_transcript).read_bytes() == original
+    assert sorted(p.name for p in Path(leaky_transcript).parent.iterdir()) \
+        == ["leaky.jsonl"]
+
+
+def test_failed_replace_leaves_original_untouched(leaky_transcript, monkeypatch):
+    import agent_leaks.transcripts as transcripts
+    original = Path(leaky_transcript).read_bytes()
+
+    def boom(*args, **kwargs):
+        raise OSError("simulated failure while replacing the file")
+
+    monkeypatch.setattr(transcripts.os, "replace", boom)
+    with pytest.raises(OSError):
+        redact_file(leaky_transcript, write=True)
+    monkeypatch.undo()
+    assert Path(leaky_transcript).read_bytes() == original
+    # The temp file is cleaned up; nothing else lands next to the transcript.
+    assert sorted(p.name for p in Path(leaky_transcript).parent.iterdir()) \
+        == ["leaky.jsonl"]
+
+
+@pytest.mark.parametrize("sep", ["\u2028", "\u2029", "\x85"],
+                         ids=["U+2028", "U+2029", "U+0085"])
+def test_unicode_line_separators_do_not_split_records(tmp_path, sep):
+    # JSON.stringify writes these three raw; only "\n" ends a JSONL record.
+    records = [
+        tool_result("t1", f"GITHUB_TOKEN={FAKE_GITHUB} docs{sep}tail"),
+        tool_result("t2", f"AWS_ACCESS_KEY_ID={FAKE_AWS}\n"),
+        assistant_text(f"prose{sep}with a separator and no secret"),
+    ]
+    path = tmp_path / "separators.jsonl"
+    path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in records)
+                    + "\n", encoding="utf-8")
+    before = path.read_text(encoding="utf-8").split("\n")
+    assert sep in before[0] and sep in before[2]
+
+    result = redact_file(path, write=True)
+    assert {f.detector: f.line for f in result.findings} == \
+        {"github-token": 1, "aws-access-key-id": 2}
+    assert result.lines_changed == 2
+
+    after_text = path.read_text(encoding="utf-8")
+    assert FAKE_GITHUB not in after_text and FAKE_AWS not in after_text
+    after = after_text.split("\n")
+    assert len(after) == len(before) == 4 and after[3] == ""
+    for line in after[:3]:
+        json.loads(line)  # every record is still valid JSON
+    assert after[2] == before[2]  # the secret-free record is byte-identical
+    assert scan_file(path).findings == []

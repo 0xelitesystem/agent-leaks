@@ -7,9 +7,14 @@ import json
 
 from conftest import FAKE_ANTHROPIC, FAKE_AWS
 
+from agent_leaks.cli import main
 from agent_leaks.detectors import Severity
-from agent_leaks.report import render_scan_json, render_scan_terminal
-from agent_leaks.transcripts import scan_file
+from agent_leaks.report import (
+    render_redact_terminal,
+    render_scan_json,
+    render_scan_terminal,
+)
+from agent_leaks.transcripts import redact_file, scan_file
 
 
 def test_scan_finds_planted_secrets_with_line_numbers(leaky_transcript):
@@ -72,6 +77,43 @@ def test_json_report_is_valid_json_with_expected_shape(leaky_transcript):
     finding = payload["files"][0]["findings"][0]
     assert set(finding) == {"detector", "severity", "line", "occurrences",
                             "preview", "sha256_8", "marker"}
+
+
+def test_preview_cannot_inject_terminal_escapes(tmp_path, capsys):
+    # A stored \u001b decodes to a real ESC; ESC c resets the terminal and
+    # ESC[3J wipes scrollback, erasing the HIGH findings printed above.
+    records = [{"type": "user", "toolUseResult": {"stdout": (
+        f"ANTHROPIC_API_KEY={FAKE_ANTHROPIC}\n"
+        "DEPLOY_TOKEN=\x1bcQw9eR7tY5uI3oP1aSdFgHjKl\n"
+        "SESSION_SECRET=\x1b[3JZx8Cv7Bn6Mm5Ll4Kk3Jj9Hh\n"
+        "API_KEY=\u202e\x9b\x07Rt5Yu7Io9Pa1Sd3Fg5Hj\n")}}]
+    path = tmp_path / "esc.jsonl"
+    path.write_text("\n".join(json.dumps(r) for r in records) + "\n",
+                    encoding="utf-8")
+    assert "\x1b" not in path.read_text(encoding="utf-8")  # stored escaped
+
+    scan = scan_file(path)
+    assert len(scan.findings) == 4
+    redacted = redact_file(path)
+    unsafe = ("\x1b", "\x07", "\x9b", "\u202e")
+    for output in (render_scan_terminal([scan], color=False),
+                   render_redact_terminal(redacted, color=False)):
+        for ch in unsafe:
+            assert ch not in output
+        # Still recognisable: the escaped head and the length survive.
+        assert "\\x1bcQw…(26 chars)" in output
+        assert "\\x1b[3J…(27 chars)" in output
+        assert "\\u202e\\x9b\\x07R…(23 chars)" in output
+        assert f"sk-a…({len(FAKE_ANTHROPIC)} chars)" in output
+    colored = render_scan_terminal([scan], color=True)
+    for seq in ("\x1bc", "\x1b[3J", "\x07", "\x9b", "\u202e"):
+        assert seq not in colored
+
+    assert main(["scan", str(path), "--no-color"]) == 0
+    assert main(["redact", str(path), "--no-color"]) == 0
+    out = capsys.readouterr().out
+    for ch in unsafe:
+        assert ch not in out
 
 
 def test_malformed_line_is_still_scanned(tmp_path):

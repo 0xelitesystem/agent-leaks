@@ -142,8 +142,12 @@ DETECTORS: list[Detector] = [
     ),
     Detector(
         "generic-credential", Severity.MEDIUM,
-        re.compile(r"""\w*(?:API_KEY|APIKEY|SECRET|TOKEN|PASSWORD|PASSWD"""
-                   r"""|PRIVATE_KEY|ACCESS_KEY)\w*\s*[=:]\s*['"]?([^\s'"`;,]{12,})""",
+        # Anchored at a word start with bounded name runs, so the cost is
+        # linear in the input: two unbounded `\w*` around the keyword
+        # backtracked cubically on text like "token" * 800.
+        re.compile(r"""(?<!\w)\w{0,64}?(?:API_KEY|APIKEY|SECRET|TOKEN|PASSWORD"""
+                   r"""|PASSWD|PRIVATE_KEY|ACCESS_KEY)\w{0,64}?"""
+                   r"""\s*[=:]\s*['"]?([^\s'"`;,]{12,})""",
                    re.IGNORECASE),
         group=1,
         validate=_generic_value_ok,

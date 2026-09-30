@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -50,13 +51,26 @@ def _totals(scans: list[FileScan]) -> dict[str, int]:
     }
 
 
+# C0 controls (except tab and newline), DEL, C1 controls, and bidi controls.
+_UNSAFE_CHARS = re.compile(
+    r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
+
+
+def _safe(text: str) -> str:
+    """Escape characters that could drive the terminal. Previews come
+    from transcript content, which anyone the agent read can influence."""
+    return _UNSAFE_CHARS.sub(
+        lambda m: (f"\\x{ord(m.group()):02x}" if ord(m.group()) < 0x100
+                   else f"\\u{ord(m.group()):04x}"), text)
+
+
 def _finding_line(finding: Finding, color: bool) -> str:
     style, label = _SEVERITY_STYLE[finding.severity]
     times = f"  ×{finding.occurrences}" if finding.occurrences > 1 else ""
     return (f"  {_paint('⚠ ' + label, style, enabled=color)}"
             f" {finding.detector.ljust(24)}"
             f" line {str(finding.line).ljust(5)}"
-            f" {finding.preview}{times}")
+            f" {_safe(finding.preview)}{times}")
 
 
 def render_scan_terminal(scans: list[FileScan], color: bool | None = None) -> str:
