@@ -110,10 +110,10 @@ Redaction is **not** string replacement on the raw file. Every line is JSON-pars
 
 ## Part of the agent accountability suite
 
-- [agent-receipts](https://github.com/0xelitesystem/agent-receipts), did the agent's claims ("tests pass") match reality?
+- [donediff](https://github.com/0xelitesystem/donediff), did the agent's claims ("tests pass") match reality?
 - **agent-leaks**, did it leak secrets into the transcript?
-- [agent-blast-radius](https://github.com/0xelitesystem/agent-blast-radius), what irreversible actions did it take?
-- [agent-rules](https://github.com/0xelitesystem/agent-rules), did it follow your `CLAUDE.md`?
+- [cantundo](https://github.com/0xelitesystem/cantundo), what irreversible actions did it take?
+- [rulediff](https://github.com/0xelitesystem/rulediff), did it follow your `CLAUDE.md`?
 - [agent-cost](https://github.com/0xelitesystem/agent-cost), where did the tokens and money go?
 
 ## Roadmap
