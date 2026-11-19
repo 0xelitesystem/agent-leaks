@@ -40,7 +40,7 @@ from agent_leaks.detectors import find_secrets, mask, shannon_entropy
     (FAKE_JWT, "jwt"),
     (FAKE_PEM, "private-key-block"),
     (FAKE_CONN, "connection-string"),
-    ("mongodb+srv://app:s3cretPW@cluster0.fake.net", "connection-string"),
+    ("mongodb+srv://app:s3cretPW@cluster0.example.net", "connection-string"),
     (f"API_KEY={FAKE_GENERIC}", "generic-credential"),
     (f'MY_ACCESS_KEY: "{FAKE_GENERIC}"', "generic-credential"),
 ], ids=lambda v: v if isinstance(v, str) and len(v) < 30 else None)

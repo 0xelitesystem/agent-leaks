@@ -23,7 +23,7 @@ FAKE_SLACK = "xoxb-1234567890-FAKEFAKEFAKE"
 FAKE_STRIPE = "sk_" + "live_FAKEFAKEFAKEFAKEFAKE1234"
 FAKE_GOOGLE = "AIza" + "FAKE0fake1FAKE2fake3FAKE4fake5FAKE6"  # 35 after AIza
 FAKE_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJmYWtlIjoidHJ1ZSJ9.FAKEsignatureFAKEsig"
-FAKE_CONN = "postgres://admin:Sup3rFakePassw0rd@db.internal.fake:5432/prod"
+FAKE_CONN = "postgres://admin:Sup3rFakePassw0rd@db.internal.test:5432/prod"
 FAKE_GENERIC = "kJ8s9dF3hG2lQ7wXzR4tY6uNpB5mC0vA"  # high entropy, no prefix
 FAKE_PEM = ("-----BEGIN RSA PRIVATE KEY-----\n"
             "FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\n"
@@ -113,7 +113,7 @@ def clean_transcript(tmp_path):
 def escaped_transcript(tmp_path):
     """A connection string whose password carries JSON-escaped characters
     (backslash + quote), the case naive raw-line replacement gets wrong."""
-    conn = 'mysql://root:pa\\s"w0rd@db.fake:3306'
+    conn = 'mysql://root:pa\\s"w0rd@db.test:3306'
     records = [
         assistant_tool("t1", "Bash", {"command": "cat config.ini"}),
         tool_result("t1", f"dsn = {conn}\nname = acme\n"),

@@ -15,7 +15,7 @@ CWD = "/home/dev/acme-api"
 FAKE_ENV = """\
 ANTHROPIC_API_KEY=sk-ant-api03-FAKEFAKEFAKEFAKEFAKEFAKE1234567890
 AWS_ACCESS_KEY_ID=AKIAFAKEFAKEFAKE1234
-DATABASE_URL=postgres://admin:Sup3rFakePassw0rd@db.internal.fake:5432/prod
+DATABASE_URL=postgres://admin:Sup3rFakePassw0rd@db.internal.test:5432/prod
 GITHUB_TOKEN=ghp_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE1234
 """
 
@@ -52,7 +52,7 @@ records = [
     result("t1", FAKE_ENV),
     asst_text("Got it. Now testing the billing integration."),
     asst_tool("t2", "Bash", {
-        "command": "curl -s https://api.billing.fake/v1/charges",
+        "command": "curl -s https://api.billing.test/v1/charges",
     }),
     # An API error body echoing a token back. Tool OUTPUTS leak too.
     result("t2", '{"error":{"message":"Invalid API key provided",'
